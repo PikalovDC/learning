@@ -41,3 +41,9 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
     """DELETE /lessons/{id}/delete/ - удаление урока"""
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
+
+
+class PaymentListAPIView(generics.ListAPIView):
+    """GET /lessons/ - получение списка всех уроков"""
+    queryset = Lesson.objects.all()
+    serializer_class = LessonSerializer
