@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Course, Lesson
+from lms.models import Course, Lesson
 
 
 class LessonSerializer(serializers.ModelSerializer):
@@ -20,11 +20,11 @@ class CourseSerializer(serializers.ModelSerializer):
     # Добавляем поле с количеством уроков в курсе
     lessons_count = serializers.SerializerMethodField()
 
-    lessons = LessonSerializer(many=True, read_only=True, source='lessons')
+    lessons = LessonSerializer(many=True, read_only=True)
 
     class Meta:
         model = Course
-        fields = ['id', 'name', 'preview', 'description', 'lessons_count', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'preview', 'description', 'lessons', 'lessons_count', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
     def get_lessons_count(self, obj):
