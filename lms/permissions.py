@@ -1,63 +1,100 @@
 from rest_framework import permissions
 
 
-class CanEditCourse(permissions.BasePermission):
-    """
-    Права для курсов:
-    - Модераторы: могут редактировать любые, но не создавать и не удалять
-    - Обычные пользователи: могут всё только со своими курсами
-    """
+class IsModerator(permissions.BasePermission):
+    """Проверка, является ли пользователь модератором"""
 
     def has_permission(self, request, view):
-        # Модераторы не могут создавать
+        return request.user.is_authenticated and request.user.groups.filter(name='Moderators').exists()
+
+
+class IsOwner(permissions.BasePermission):
+    """Проверка, является ли пользователь владельцем объекта"""
+
+    def has_object_permission(self, request, view, obj):
+        if not request.user.is_authenticated:
+            return False
+        if hasattr(obj, 'owner'):
+            return obj.owner == request.user
+        return False
+
+
+class CanCreateCourse(permissions.BasePermission):
+    """Только обычные пользователи (не модераторы) могут создавать курсы"""
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
         if view.action == 'create':
             return not request.user.groups.filter(name='Moderators').exists()
         return True
 
+
+class CanCreateLesson(permissions.BasePermission):
+    """Только обычные пользователи (не модераторы) могут создавать уроки"""
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        # Модераторы не могут создавать
+        return not request.user.groups.filter(name='Moderators').exists()
+
+
+class CanEditCourse(permissions.BasePermission):
+    """Модераторы могут редактировать любые курсы, владельцы - свои"""
+
     def has_object_permission(self, request, view, obj):
-        user = request.user
+        if not request.user.is_authenticated:
+            return False
 
-        # Модераторы не могут удалять
-        if view.action == 'destroy':
-            return not user.groups.filter(name='Moderators').exists()
+        # Модератор может редактировать
+        if request.user.groups.filter(name='Moderators').exists():
+            return view.action in ['update', 'partial_update']
 
-        # Модераторы могут редактировать любые курсы
-        if view.action in ['update', 'partial_update']:
-            if user.groups.filter(name='Moderators').exists():
-                return True
-            # Обычные пользователи могут редактировать только свои курсы
-            return obj.owner == user
-
-        # Просмотр
-        return True
+        # Владелец может редактировать
+        return obj.owner == request.user
 
 
 class CanEditLesson(permissions.BasePermission):
-    """
-    Права для уроков:
-    - Модераторы: могут редактировать любые, но не создавать и не удалять
-    - Обычные пользователи: могут всё только со своими уроками
-    """
-
-    def has_permission(self, request, view):
-        # Модераторы не могут создавать
-        if view.__class__.__name__ == 'LessonCreateAPIView':
-            return not request.user.groups.filter(name='Moderators').exists()
-        return True
+    """Модераторы могут редактировать любые уроки, владельцы - свои"""
 
     def has_object_permission(self, request, view, obj):
-        user = request.user
+        if not request.user.is_authenticated:
+            return False
+
+        # Модератор может редактировать
+        if request.user.groups.filter(name='Moderators').exists():
+            return True
+
+        # Владелец может редактировать
+        return obj.owner == request.user
+
+
+class CanDeleteCourse(permissions.BasePermission):
+    """Только владельцы могут удалять свои курсы. Модераторы не могут удалять"""
+
+    def has_object_permission(self, request, view, obj):
+        if not request.user.is_authenticated:
+            return False
 
         # Модераторы не могут удалять
-        if view.__class__.__name__ == 'LessonDestroyAPIView':
-            return not user.groups.filter(name='Moderators').exists()
+        if request.user.groups.filter(name='Moderators').exists():
+            return False
 
-        # Модераторы могут редактировать любые уроки
-        if view.__class__.__name__ in ['LessonUpdateAPIView']:
-            if user.groups.filter(name='Moderators').exists():
-                return True
-            # Обычные пользователи могут редактировать только свои уроки
-            return obj.owner == user
+        # Владелец может удалять
+        return obj.owner == request.user
 
-        # Просмотр
-        return True
+
+class CanDeleteLesson(permissions.BasePermission):
+    """Только владельцы могут удалять свои уроки. Модераторы не могут удалять"""
+
+    def has_object_permission(self, request, view, obj):
+        if not request.user.is_authenticated:
+            return False
+
+        # Модераторы не могут удалять
+        if request.user.groups.filter(name='Moderators').exists():
+            return False
+
+        # Владелец может удалять
+        return obj.owner == request.user

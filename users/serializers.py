@@ -2,6 +2,24 @@ from rest_framework import serializers
 from .models import Payment, User
 
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    """Сериализатор для просмотра профиля (ограниченные поля)"""
+
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'username', 'first_name', 'last_name',
+                  'phone_number', 'city', 'avatar', 'date_joined']
+        read_only_fields = ['id', 'email', 'date_joined']
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    """Сериализатор для обновления профиля"""
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'phone_number', 'city', 'avatar']
+
+
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор для пользователя"""
     password = serializers.CharField(write_only=True, required=False)
