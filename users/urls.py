@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import PaymentListAPIView, UserCreateAPIView, UserProfileAPIView, UserUpdateAPIView, UserDeleteAPIView
+from .views import (PaymentListAPIView, UserCreateAPIView, UserProfileAPIView, UserUpdateAPIView, UserDeleteAPIView,
+SubscriptionAPIView)
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 app_name = 'users'
@@ -12,4 +13,5 @@ urlpatterns = [
     path('profile/', UserProfileAPIView.as_view(), name='profile'),
     path('profile/update/', UserUpdateAPIView.as_view(), name='profile-update'),
     path('profile/delete/', UserDeleteAPIView.as_view(), name='profile-delete'),
+    path('subscribe/', SubscriptionAPIView.as_view(), name='subscribe'),
 ]

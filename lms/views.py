@@ -15,18 +15,26 @@ from .permissions import (
     CanDeleteLesson,
 )
 from rest_framework import viewsets
+from .paginators import CoursePaginator, LessonPaginator
 
 
 class CourseViewSet(viewsets.ModelViewSet):
     """CRUD для курсов через ViewSet"""
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = CoursePaginator
 
     def get_queryset(self):
         user = self.request.user
         if user.groups.filter(name='Moderators').exists():
             return Course.objects.all()
         return Course.objects.filter(owner=user)
+
+    def get_serializer_context(self):
+        """Передаем request в контекст для доступа к пользователю"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def get_permissions(self):
         """Динамическое назначение прав в зависимости от действия"""
@@ -44,11 +52,11 @@ class CourseViewSet(viewsets.ModelViewSet):
         serializer.save(owner=self.request.user)
 
 
-
 class LessonListAPIView(generics.ListAPIView):
     """GET /lessons/ - получение списка всех уроков"""
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = LessonPaginator
 
     def get_queryset(self):
         user = self.request.user
