@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 class Course(models.Model):
     name = models.CharField(
@@ -23,6 +24,14 @@ class Course(models.Model):
     updated_at = models.DateTimeField(
         auto_now=True,
         verbose_name='дата последнего изменения'
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,  # ← вместо 'users.User'
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='courses',
+        verbose_name='Владелец'
     )
 
     class Meta:
@@ -71,6 +80,14 @@ class Lesson(models.Model):
     updated_at = models.DateTimeField(
         auto_now=True,
         verbose_name='дата обновления'
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,  # ← вместо 'users.User'
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='lessons',
+        verbose_name='Владелец'
     )
 
     class Meta:
