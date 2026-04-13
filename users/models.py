@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
+from django.conf import settings
 from lms.models import Course, Lesson
 
 
@@ -102,3 +102,32 @@ class Payment(models.Model):
         else:
             item = f"урок '{self.paid_lesson.name}'"
         return f"{self.user.email} - {item} - {self.amount} руб."
+
+
+class Subscription(models.Model):
+    """Модель подписки на обновления курса"""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='subscriptions',
+        verbose_name='Пользователь'
+    )
+    course = models.ForeignKey(
+        'lms.Course',
+        on_delete=models.CASCADE,
+        related_name='subscribers',
+        verbose_name='Курс'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата подписки'
+    )
+
+    class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+        unique_together = ['user', 'course']  # Пользователь может подписаться на курс только один раз
+
+    def __str__(self):
+        return f"{self.user.email} - {self.course.name}"

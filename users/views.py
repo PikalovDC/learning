@@ -1,13 +1,16 @@
 from django.shortcuts import render
-from rest_framework import generics, status
+from rest_framework import generics, status, views
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
-from users.models import Payment, User
-from users.serializers import UserProfileSerializer, UserUpdateSerializer, PaymentSerializer, UserSerializer
+from users.models import Payment, User, Subscription
+from users.serializers import (UserProfileSerializer, UserUpdateSerializer, PaymentSerializer, UserSerializer,
+SubscriptionSerializer)
 from .filters import PaymentFilter
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.shortcuts import get_object_or_404
+from lms.models import Course
 
 
 class UserCreateAPIView(generics.CreateAPIView):
@@ -62,3 +65,42 @@ class PaymentListAPIView(generics.ListAPIView):
     def get_queryset(self):
         """Пользователи видят только свои платежи"""
         return Payment.objects.filter(user=self.request.user)
+
+
+class SubscriptionAPIView(views.APIView):
+    """
+    Эндпоинт для управления подпиской на курс:
+    - Если подписка есть - удаляем
+    - Если подписки нет - создаем
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        course_id = request.data.get('course_id')
+
+        if not course_id:
+            return Response(
+                {"error": "Необходимо указать course_id"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        course = get_object_or_404(Course, id=course_id)
+
+        # Проверяем, есть ли подписка
+        subscription = Subscription.objects.filter(user=user, course=course)
+
+        if subscription.exists():
+            # Если подписка есть - удаляем
+            subscription.delete()
+            return Response(
+                {"message": "Подписка удалена", "is_subscribed": False},
+                status=status.HTTP_200_OK
+            )
+        else:
+            # Если подписки нет - создаем
+            Subscription.objects.create(user=user, course=course)
+            return Response(
+                {"message": "Подписка добавлена", "is_subscribed": True},
+                status=status.HTTP_201_CREATED
+            )
