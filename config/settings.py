@@ -16,6 +16,12 @@ from datetime import timedelta
 
 from dotenv import load_dotenv
 from pathlib import Path
+import stripe
+
+
+STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+stripe.api_key = STRIPE_SECRET_KEY
 
 load_dotenv(override=True)
 
@@ -50,6 +56,7 @@ INSTALLED_APPS = [
     "lms",
     "django_filters",
     "rest_framework_simplejwt",
+    "drf_yasg",
 ]
 
 MIDDLEWARE = [

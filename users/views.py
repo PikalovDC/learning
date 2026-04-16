@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework import generics, status, views
+from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from users.models import Payment, User, Subscription
@@ -11,6 +12,36 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
 from lms.models import Course
+from .services import create_stripe_payment_session
+
+
+class CreatePaymentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        course_id = request.data.get('course_id')
+        course = get_object_or_404(Course, id=course_id)
+
+        # Сумма оплаты (можно брать из запроса или фиксированную)
+        amount = request.data.get('amount', 5000)
+
+        # Создаем платеж в БД
+        payment = Payment.objects.create(
+            user=request.user,
+            paid_course=course,
+            amount=amount,
+            payment_method='transfer'
+        )
+
+        # Получаем ссылку на оплату от Stripe
+        payment_url = create_stripe_payment_session(course.name, amount)
+
+        return Response({
+            'payment_id': payment.id,
+            'payment_url': payment_url,
+            'amount': amount,
+            'course': course.name
+        })
 
 
 class UserCreateAPIView(generics.CreateAPIView):
