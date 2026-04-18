@@ -13,17 +13,13 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from datetime import timedelta
-
 from dotenv import load_dotenv
 from pathlib import Path
-import stripe
-
-
-STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY')
-STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
-stripe.api_key = STRIPE_SECRET_KEY
 
 load_dotenv(override=True)
+
+
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -158,3 +154,12 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+
+STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+STRIPE_SUCCESS_URL = os.getenv('STRIPE_SUCCESS_URL', 'http://localhost:8000/payment/success/')
+STRIPE_CANCEL_URL = os.getenv('STRIPE_CANCEL_URL', 'http://localhost:8000/payment/cancel/')
+
+import stripe
+stripe.api_key = STRIPE_SECRET_KEY
