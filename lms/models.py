@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 
+
 class Course(models.Model):
     name = models.CharField(
         max_length=200,
@@ -89,6 +90,7 @@ class Lesson(models.Model):
         related_name='lessons',
         verbose_name='Владелец'
     )
+
 
     class Meta:
         verbose_name = 'урок'

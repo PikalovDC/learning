@@ -2,11 +2,8 @@ from rest_framework import generics, status
 from .models import Course, Lesson
 from .serializers import CourseSerializer, LessonSerializer
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from .permissions import (
-    IsModerator,
-    IsOwner,
     CanCreateCourse,
     CanCreateLesson,
     CanEditCourse,
