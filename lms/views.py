@@ -13,6 +13,8 @@ from .permissions import (
 )
 from rest_framework import viewsets
 from .paginators import CoursePaginator, LessonPaginator
+from users.tasks import send_course_update_email
+from rest_framework.response import Response
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -47,6 +49,43 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        """Обновление курса с отправкой уведомлений подписчикам"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        # Сохраняем старое название для сравнения
+        old_name = instance.name
+        old_description = instance.description
+
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        # Формируем описание изменений
+        changes = []
+        if old_name != instance.name:
+            changes.append(f"Название изменено с '{old_name}' на '{instance.name}'")
+        if old_description != instance.description:
+            changes.append("Описание курса обновлено")
+
+        # Если есть изменения, отправляем уведомления подписчикам
+        if changes:
+            changes_description = "\n".join(changes)
+            # Асинхронный вызов задачи
+            send_course_update_email.delay(
+                course_id=instance.id,
+                course_name=instance.name,
+                changes_description=changes_description
+            )
+
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        """Частичное обновление курса"""
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
 
 
 class LessonListAPIView(generics.ListAPIView):
