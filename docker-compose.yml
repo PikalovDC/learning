@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+  # PostgreSQL база данных
+  db:
+    image: postgres:15
+    container_name: learning_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DB_NAME:-school}
+      POSTGRES_USER: ${DB_USER:-school_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-school_password}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-school_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - learning_network
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: learning_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - learning_network
+
+  # Django + Celery (общий образ)
+  backend:
+    build: .
+    container_name: learning_backend
+    volumes:
+      - .:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=${DEBUG:-True}
+      - SECRET_KEY=${SECRET_KEY}
+      - DB_NAME=${DB_NAME:-school}
+      - DB_USER=${DB_USER:-school_user}
+      - DB_PASSWORD=${DB_PASSWORD:-school_password}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - learning_network
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  # Celery worker
+  celery:
+    build: .
+    container_name: learning_celery
+    volumes:
+      - .:/app
+    environment:
+      - DB_NAME=${DB_NAME:-school}
+      - DB_USER=${DB_USER:-school_user}
+      - DB_PASSWORD=${DB_PASSWORD:-school_password}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - learning_network
+    command: celery -A celery_app worker --loglevel=info -P eventlet
+
+  # Celery beat
+  celery-beat:
+    build: .
+    container_name: learning_celery_beat
+    volumes:
+      - .:/app
+    environment:
+      - DB_NAME=${DB_NAME:-school}
+      - DB_USER=${DB_USER:-school_user}
+      - DB_PASSWORD=${DB_PASSWORD:-school_password}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - learning_network
+    command: celery -A celery_app beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+networks:
+  learning_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:

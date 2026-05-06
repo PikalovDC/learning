@@ -201,3 +201,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Docker volumes
+postgres_data/
+static_volume/
+media_volume/
