@@ -38,13 +38,11 @@ services:
   web:
     build: .
     container_name: learning_web
-    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - .:/app
       - static_volume:/app/static
       - media_volume:/app/media
-    ports:
-      - "8000:8000"
     environment:
       - DEBUG=${DEBUG:-True}
       - SECRET_KEY=${SECRET_KEY}
@@ -106,6 +104,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - learning_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: learning_nginx
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - static_volume:/static
+      - media_volume:/media
+    ports:
+      - "80:80"
+    depends_on:
+      - web
     networks:
       - learning_network
 
