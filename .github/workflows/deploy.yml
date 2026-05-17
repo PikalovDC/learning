@@ -50,6 +50,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Wait for PostgreSQL
+        run: sleep 5
+
       - name: Run migrations
         env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
@@ -94,5 +97,6 @@ jobs:
             git pull
             sudo docker compose down
             sudo docker compose up -d --build
+            sleep 10
             sudo docker compose exec web python manage.py migrate
             sudo docker compose exec web python manage.py collectstatic --noinput
