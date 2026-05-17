@@ -10,7 +10,7 @@ services:
       - "5432"
     environment:
       POSTGRES_DB: ${NAME:-school}
-      POSTGRES_USER: ${USER:-school_user}
+      POSTGRES_USER: school_user
       POSTGRES_PASSWORD: ${PASSWORD:-school_password}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${USER:-school_user}"]
@@ -55,6 +55,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
     depends_on:
       db:
         condition: service_healthy
@@ -77,6 +78,7 @@ services:
       - PORT=${PORT:-5432}
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
     depends_on:
       db:
         condition: service_healthy
@@ -99,6 +101,7 @@ services:
       - PORT=${PORT:-5432}
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
     depends_on:
       db:
         condition: service_healthy
